@@ -23,6 +23,7 @@ from tensorboardX import SummaryWriter
 criterion = nn.BCEWithLogitsLoss(reduction = "none")
 
 def train(args, model, device, loader, optimizer):
+    loss_accum = 0
     model.train()
 
     for step, batch in enumerate(tqdm(loader, desc="Iteration")):
@@ -42,6 +43,10 @@ def train(args, model, device, loader, optimizer):
         loss.backward()
 
         optimizer.step()
+        
+        loss_accum += float(loss.cpu().item())
+        
+    return loss_accum/step
 
 
 def eval(args, model, device, loader, normalized_weight):
@@ -143,7 +148,8 @@ def main():
     for epoch in range(1, args.epochs+1):
         print("====epoch " + str(epoch))
     
-        train(args, model, device, loader, optimizer)
+        train_loss = train(args, model, device, loader, optimizer)
+        print(train_loss)
 
     if not args.output_model_file == "":
         torch.save(model.gnn.state_dict(), args.output_model_file + ".pth")
